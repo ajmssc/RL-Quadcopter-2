@@ -8,7 +8,8 @@ from agents.noise import OUNoise
 class MyAgent():
     """Reinforcement Learning agent that learns using DDPG."""
 
-    def __init__(self, task):
+    def __init__(self, task, learning_rate_actor=0.0002,
+            learning_rate_critic=0.00003, gamma=0.99, tau=0.01):
         self.task = task
         self.state_size = task.state_size
         self.action_size = task.action_size
@@ -16,24 +17,25 @@ class MyAgent():
         self.action_high = task.action_high
         self.action_range = self.action_high - self.action_low
 
-        learning_rate = 0.002
         # Actor (Policy) Model
         self.actor_local = Actor(self.state_size, self.action_size,
                                  self.action_low, self.action_high,
-                                 learning_rate=learning_rate)
+                                 learning_rate=learning_rate_actor)
         self.actor_target = Actor(self.state_size, self.action_size,
                                   self.action_low, self.action_high,
-                                  learning_rate=learning_rate)
+                                  learning_rate=learning_rate_actor)
 
         # Critic (Value) Model
         self.critic_local = Critic(self.state_size, self.action_size,
-                                   learning_rate=learning_rate)
+                                   learning_rate=learning_rate_critic)
         self.critic_target = Critic(self.state_size, self.action_size,
-                                    learning_rate=learning_rate)
+                                    learning_rate=learning_rate_critic)
 
         # Initialize target model parameters with local model parameters
-        self.critic_target.model.set_weights(self.critic_local.model.get_weights())
-        self.actor_target.model.set_weights(self.actor_local.model.get_weights())
+        self.critic_target.model.set_weights(
+            self.critic_local.model.get_weights())
+        self.actor_target.model.set_weights(
+            self.actor_local.model.get_weights())
 
         # Noise process
         self.noise = OUNoise(size=self.action_size, mu=0, theta=0.15, sigma=0.5)
@@ -43,8 +45,8 @@ class MyAgent():
         self.memory = ReplayBuffer(batch_size=self.batch_size)
 
         # Algorithm parameters
-        self.gamma = 0.99  # discount factor
-        self.tau = 0.01  # for soft update of target parameters
+        self.gamma = gamma  # discount factor
+        self.tau = tau  # for soft update of target parameters
 
         self.last_state = None
 

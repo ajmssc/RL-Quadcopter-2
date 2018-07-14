@@ -27,28 +27,33 @@ class Task():
         self.action_high = 900
         self.action_size = 4
 
-        # Goal
-        self.target_pos = target_pos if target_pos is not None else np.array(
-            [0., 0., 10.])
+        # Hover
+        self.target_pos = init_pose[:3] if target_pos is not None else np.array([0., 0., 10.])
 
     def get_reward(self):
         """Uses current pose of sim to return reward."""
         max_reward = 1
         min_reward = -1
 
+        ed = (abs(self.sim.pose[:3] - self.target_pos)).sum() # euclidian distance
+        avd = (abs(self.sim.angular_v)).sum() # angular v
+        vd = (abs(self.sim.v)).sum() # velocity
+
+        reward = 1. - ed/519. - avd / 20. - vd / 6000.
         # reward_z = 10 / abs(self.sim.pose[2] - self.target_pos[2]) - 2
-        loss_z = .2 * abs(self.sim.pose[2] - self.target_pos[2])
+        # loss_z = .2 * abs(self.sim.pose[2] - self.target_pos[2])
         # loss_xy = .01 * (abs(self.sim.pose[:2] - self.target_pos[:2])).sum()
-        reward = 1 - loss_z # - loss_xy
+        # reward = 1 - loss_z # - loss_xy
         # reward += 1.-.3*(abs(self.sim.pose[:3] - self.target_pos)).sum()
+
         reward = np.maximum(np.minimum(reward, max_reward), min_reward)
 
-        if (abs(self.sim.pose[:3] - self.target_pos)).sum() < 1:
-            reward = 3
+        # if (abs(self.sim.pose[:3] - self.target_pos)).sum() < 1:
+        #     reward = 3
 
-        if (self.sim.pose[2]) <= 0.1: # penalize falling early
-            reward = -3 * (self.sim.runtime - self.sim.time)
-            self.sim.done = True
+        # if (self.sim.pose[2]) <= 0.1: # penalize falling to the ground
+        #     reward = -3 * (self.sim.runtime - self.sim.time)
+        #     self.sim.done = True
 
         return reward
 
@@ -72,7 +77,7 @@ class Task():
 
 
 if __name__ == "__main__":
-    task = Task(init_pose=np.array([0., 0., 8., 0., 0., 0.]),
+    task = Task(init_pose=np.array([0., 0., 10., 0., 0., 0.]),
                 init_velocities=np.array([0., 0., 0.]),
                 init_angle_velocities=np.array([0., 0., 0.]),
                 runtime=5,

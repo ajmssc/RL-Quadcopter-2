@@ -1,5 +1,5 @@
 from keras import backend as K
-from keras import layers, models, optimizers
+from keras import layers, models, optimizers, regularizers
 from keras.utils import plot_model
 
 
@@ -7,7 +7,7 @@ class Actor:
     """Actor (Policy) Model."""
 
     def __init__(self, state_size, action_size, action_low, action_high,
-            learning_rate, dropout=0.1):
+            learning_rate, dropout=0.1, l2_reg=0.00001):
         """Initialize parameters and build model.
 
         Params
@@ -24,6 +24,7 @@ class Actor:
         self.action_range = self.action_high - self.action_low
         self.dropout = dropout
         self.learning_rate = learning_rate
+        self.l2_reg = l2_reg
 
         # Initialize any other variables here
 
@@ -35,14 +36,16 @@ class Actor:
         states = layers.Input(shape=(self.state_size,), name='states')
 
         # Add hidden layers
-        net = layers.Dense(units=64, use_bias=False)(states)
+        net = layers.Dense(units=64, use_bias=False,
+                           kernel_initializer='he_normal')(states)
         net = layers.BatchNormalization()(net)
-        net = layers.Activation('relu')(net)
+        net = layers.LeakyReLU(1e-2)(net)
         net = layers.Dropout(self.dropout)(net)
 
-        net = layers.Dense(units=128, use_bias=False)(net)
+        net = layers.Dense(units=128, use_bias=False,
+                           kernel_initializer='he_normal')(net)
         net = layers.BatchNormalization()(net)
-        net = layers.Activation('relu')(net)
+        net = layers.LeakyReLU(1e-2)(net)
         net = layers.Dropout(self.dropout)(net)
 
         # Try different layer sizes, activations, add batch normalization, regularizers, etc.
@@ -79,7 +82,8 @@ class Actor:
 class Critic:
     """Critic (Value) Model."""
 
-    def __init__(self, state_size, action_size, learning_rate, dropout=0.1):
+    def __init__(self, state_size, action_size, learning_rate, dropout=0.1,
+            l2_reg=0.00001):
         """Initialize parameters and build model.
         Params
         ======
@@ -90,6 +94,7 @@ class Critic:
         self.action_size = action_size
         self.dropout = dropout
         self.learning_rate = learning_rate
+        self.l2_reg = l2_reg
 
         # Initialize any other variables here
 
@@ -102,32 +107,44 @@ class Critic:
         actions = layers.Input(shape=(self.action_size,), name='actions')
 
         # Add hidden layer(s) for state pathway
-        net_states = layers.Dense(units=128, use_bias=False)(states)
+        net_states = layers.Dense(units=256, use_bias=False,
+                                  kernel_initializer='he_normal',
+                                  kernel_regularizer=regularizers.l2(
+                                      self.l2_reg))(states)
         net_states = layers.BatchNormalization()(net_states)
-        net_states = layers.Activation('relu')(net_states)
+        net_states = layers.LeakyReLU(1e-2)(net_states)
         net_states = layers.Dropout(self.dropout)(net_states)
 
-        net_states = layers.Dense(units=64, use_bias=False)(net_states)
+        net_states = layers.Dense(units=128, use_bias=False,
+                                  kernel_initializer='he_normal',
+                                  kernel_regularizer=regularizers.l2(
+                                      self.l2_reg))(net_states)
         net_states = layers.BatchNormalization()(net_states)
-        net_states = layers.Activation('relu')(net_states)
+        net_states = layers.LeakyReLU(1e-2)(net_states)
         net_states = layers.Dropout(self.dropout)(net_states)
 
         # Add hidden layer(s) for action pathway
-        net_actions = layers.Dense(units=128, use_bias=False)(actions)
+        net_actions = layers.Dense(units=256, use_bias=False,
+                                   kernel_initializer='he_normal',
+                                   kernel_regularizer=regularizers.l2(
+                                       self.l2_reg))(actions)
         net_actions = layers.BatchNormalization()(net_actions)
-        net_actions = layers.Activation('relu')(net_actions)
+        net_states = layers.LeakyReLU(1e-2)(net_actions)
         net_actions = layers.Dropout(self.dropout)(net_actions)
 
-        net_actions = layers.Dense(units=64, use_bias=False)(net_actions)
+        net_actions = layers.Dense(units=128, use_bias=False,
+                                   kernel_initializer='he_normal',
+                                   kernel_regularizer=regularizers.l2(
+                                       self.l2_reg))(net_actions)
         net_actions = layers.BatchNormalization()(net_actions)
-        net_actions = layers.Activation('relu')(net_actions)
+        net_states = layers.LeakyReLU(1e-2)(net_actions)
         net_actions = layers.Dropout(self.dropout)(net_actions)
 
         # Try different layer sizes, activations, add batch normalization, regularizers, etc.
 
         # Combine state and action pathways
         net = layers.Add()([net_states, net_actions])
-        net = layers.Activation('relu')(net)
+        net = layers.LeakyReLU(1e-2)(net)
 
         # Add more layers to the combined network if needed
 

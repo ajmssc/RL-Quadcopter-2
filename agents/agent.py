@@ -44,7 +44,7 @@ class MyAgent():
 
         # Algorithm parameters
         self.gamma = 0.99  # discount factor
-        self.tau = 0.5  # for soft update of target parameters
+        self.tau = 0.01  # for soft update of target parameters
 
         self.last_state = None
 

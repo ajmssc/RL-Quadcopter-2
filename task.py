@@ -48,6 +48,7 @@ class Task():
 
         if (self.sim.pose[2]) <= 0.1: # penalize falling early
             reward = -3 * (self.sim.runtime - self.sim.time)
+            self.sim.done = True
 
         return reward
 
